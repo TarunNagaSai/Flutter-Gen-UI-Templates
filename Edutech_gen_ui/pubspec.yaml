@@ -57,7 +57,7 @@ dependencies:
   dio: ^5.9.0
   flutter_dotenv: ^6.0.0
   firebase_core: ^4.2.1
-  bloc: ^9.1.0
+  firebase_ai: ^3.6.0
   gpt_markdown: ^1.1.4
   json_annotation: ^4.8.1
   genui:
@@ -68,7 +68,6 @@ dependencies:
     git:
       url: https://github.com/flutter/genui.git
       path: packages/genui_firebase_ai
-  flutter_bloc: ^9.1.1
   auto_route: ^10.2.2
   shared_preferences: ^2.5.3
   firebase_app_check: ^0.4.1+2
@@ -77,6 +76,8 @@ dependencies:
   youtube_player_flutter: ^9.1.3
   youtube_player_iframe: ^5.2.2
   shimmer_ai: ^1.3.0
+  flutter_riverpod: ^3.0.3
+  riverpod_annotation: ^3.0.3
 
 dependency_overrides:
   genui:
@@ -96,6 +97,8 @@ dev_dependencies:
   auto_route_generator: ^10.2.6
   build_runner: ^2.10.3
   json_serializable: ^6.7.1
+  riverpod_generator: ^3.0.3
+ 
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

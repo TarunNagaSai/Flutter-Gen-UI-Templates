@@ -47,7 +47,7 @@ class YouTubeService {
       );
 
       if (response.statusCode == 200) {
-        return YouTubeSearchResponse.fromJson(response.data);
+        return YouTubeSearchResponse.fromJson(response.data as Map<String, dynamic>);
       } else {
         throw DioException(
           requestOptions: response.requestOptions,

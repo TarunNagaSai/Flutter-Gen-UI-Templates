@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class ChatSuggestionChip extends StatelessWidget {
   final String label;
   final IconData icon;
-  final Function(String) onTap;
+  final void Function(String) onTap;
 
   const ChatSuggestionChip({
     super.key,

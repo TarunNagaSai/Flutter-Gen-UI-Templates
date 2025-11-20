@@ -1,0 +1,6 @@
+targets:
+  $default:
+    sources:
+      exclude:
+        - lib/src/chat/widgets/ai_chat_bubble.dart
+        - lib/src/chat/widgets/user_chat_bubble.dart

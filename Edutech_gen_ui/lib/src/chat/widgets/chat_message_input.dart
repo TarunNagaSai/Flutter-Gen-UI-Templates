@@ -1,15 +1,15 @@
-import 'package:education_gen_ui/src/chat/bloc/chat_bloc.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
 class ChatMessageInput extends StatelessWidget {
   final TextEditingController controller;
-  final Function(String) onSendMessage;
+  final void Function(String) onSendMessage;
+  final bool isLoading;
 
   const ChatMessageInput({
     super.key,
     required this.controller,
     required this.onSendMessage,
+    this.isLoading = false,
   });
 
   @override
@@ -31,33 +31,27 @@ class ChatMessageInput extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: BlocBuilder<ChatBloc, ChatState>(
-              builder: (context, state) {
-                return TextField(
-                  controller: controller,
-                  decoration: InputDecoration(
-                    hintText: 'Type a message...',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(24),
-                      borderSide: BorderSide.none,
-                    ),
-                    filled: true,
-                    fillColor: theme.colorScheme.surfaceContainerHighest,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 12,
-                    ),
-                    suffixIcon: IconButton(
-                      onPressed: state is ChatLoadingState
-                          ? null
-                          : () => onSendMessage(controller.text),
-                      icon: const Icon(Icons.send),
-                    ),
-                  ),
-                  onSubmitted: onSendMessage,
-                  textInputAction: TextInputAction.send,
-                );
-              },
+            child: TextField(
+              controller: controller,
+              decoration: InputDecoration(
+                hintText: 'Type a message...',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide: BorderSide.none,
+                ),
+                filled: true,
+                fillColor: theme.colorScheme.surfaceContainerHighest,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
+                suffixIcon: IconButton(
+                  onPressed: isLoading ? null : () => onSendMessage(controller.text),
+                  icon: const Icon(Icons.send),
+                ),
+              ),
+              onSubmitted: isLoading ? null : onSendMessage,
+              textInputAction: TextInputAction.send,
             ),
           ),
         ],

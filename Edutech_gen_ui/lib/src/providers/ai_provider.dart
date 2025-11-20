@@ -1,23 +1,38 @@
 import 'dart:convert';
-import 'package:bloc/bloc.dart';
 import 'package:firebase_ai/firebase_ai.dart';
-import 'package:flutter/material.dart';
-import 'package:meta/meta.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:education_gen_ui/src/models/chat_message.dart';
 import 'package:education_gen_ui/src/const/constents.dart';
 
-part 'ai_event.dart';
-part 'ai_state.dart';
+part 'ai_provider.g.dart';
 
-class AiBloc extends Bloc<AiEvent, AiState> {
-  AiBloc() : super(AiInitial()) {
-    on<InitializeAiEvent>(initializeAi);
-    on<SendMessageEvent>(sendMessage);
-    on<ResetMessagesEvent>(resetMessages);
+class AiChatState {
+  final List<ChatMessage> messages;
+  final bool isLoading;
+  final String? error;
+
+  const AiChatState({
+    required this.messages,
+    this.isLoading = false,
+    this.error,
+  });
+
+  AiChatState copyWith({
+    List<ChatMessage>? messages,
+    bool? isLoading,
+    String? error,
+  }) {
+    return AiChatState(
+      messages: messages ?? this.messages,
+      isLoading: isLoading ?? this.isLoading,
+      error: error,
+    );
   }
+}
 
-  final List<ChatMessage> messages = [];
+@riverpod
+class AiChat extends _$AiChat {
   String conversationSummary = "-";
   late GenerativeModel model;
   final String reply = "reply";
@@ -26,53 +41,58 @@ class AiBloc extends Bloc<AiEvent, AiState> {
   final String preferenceMessages = "messages";
   final String preferenceSummary = "summary";
 
-  Future<void> initializeAi(
-    InitializeAiEvent event,
-    Emitter<AiState> emit,
-  ) async {
-    emit(AiInitializingState());
+  @override
+  Future<AiChatState> build() async {
+    // Initialize
     try {
       prefs = await SharedPreferences.getInstance();
-      getChat();
+      final messages = await _loadChat();
       model = FirebaseAI.googleAI().generativeModel(
         model: AppConstants.geminiModel,
       );
+      
       if (messages.isEmpty) {
-        await getInitialMessage();
+        final initialMessage = await _getInitialMessage();
+        return AiChatState(messages: [initialMessage]);
       }
-      emit(AiLoadedState(messages: messages));
+      
+      return AiChatState(messages: messages);
     } catch (e) {
-      messages.add(ChatMessage(message: "Error: $e", isUser: false));
-      emit(AiErrorState(error: e.toString(), messages: messages));
-    }
-  }
-
-  Future<void> getInitialMessage() async {
-    final Map<String, dynamic> response = await generateMessage(
-      message: 'Hello',
-    );
-    messages.add(
-      ChatMessage(message: response[reply]!.toString(), isUser: false),
-    );
-    conversationSummary = response[summary]!.toString();
-    await saveChat();
-  }
-
-  void getChat() {
-    final List<String>? jsonMessages = prefs.getStringList(preferenceMessages);
-    final String? savedSummary = prefs.getString(preferenceSummary);
-    messages.clear();
-    if (jsonMessages != null) {
-      messages.addAll(
-        jsonMessages.map(
-          (m) => ChatMessage.fromJson(jsonDecode(m) as Map<String, dynamic>),
-        ),
+      return AiChatState(
+        messages: [ChatMessage(message: "Error: $e", isUser: false)],
+        error: e.toString(),
       );
     }
-    conversationSummary = savedSummary ?? "";
   }
 
-  Future<void> saveChat() async {
+  Future<ChatMessage> _getInitialMessage() async {
+    final Map<String, dynamic> response = await _generateMessage(
+      message: 'Hello',
+    );
+    final message = ChatMessage(
+      message: response[reply]!.toString(),
+      isUser: false,
+    );
+    conversationSummary = response[summary]!.toString();
+    await _saveChat([message]);
+    return message;
+  }
+
+  Future<List<ChatMessage>> _loadChat() async {
+    final List<String>? jsonMessages = prefs.getStringList(preferenceMessages);
+    final String? savedSummary = prefs.getString(preferenceSummary);
+    
+    List<ChatMessage> messages = [];
+    if (jsonMessages != null) {
+      messages = jsonMessages
+          .map((m) => ChatMessage.fromJson(jsonDecode(m) as Map<String, dynamic>))
+          .toList();
+    }
+    conversationSummary = savedSummary ?? "";
+    return messages;
+  }
+
+  Future<void> _saveChat(List<ChatMessage> messages) async {
     final List<String> jsonMessages = messages
         .map((m) => jsonEncode(m.toJson()))
         .toList();
@@ -80,57 +100,77 @@ class AiBloc extends Bloc<AiEvent, AiState> {
     await prefs.setString(preferenceSummary, conversationSummary);
   }
 
-  Future<void> resetMessages(
-    ResetMessagesEvent event,
-    Emitter<AiState> emit,
-  ) async {
-    messages.clear();
-    conversationSummary = "-";
-    await saveChat();
-    emit(AiLoadingState(messages: messages));
-    await getInitialMessage();
-    emit(AiLoadedState(messages: messages));
+  Future<void> resetMessages() async {
+    state = const AsyncValue.loading();
+    
+    try {
+      conversationSummary = "-";
+      await _saveChat([]);
+      
+      final initialMessage = await _getInitialMessage();
+      state = AsyncValue.data(AiChatState(messages: [initialMessage]));
+    } catch (e, stack) {
+      state = AsyncValue.error(e, stack);
+    }
   }
 
-  Future<void> sendMessage(
-    SendMessageEvent event,
-    Emitter<AiState> emit,
-  ) async {
-    if (state is AiLoadingState) {
+  Future<void> sendMessage(String message) async {
+    final currentState = state.value;
+    if (currentState == null || currentState.isLoading) {
       return;
     }
 
-    messages.add(ChatMessage(message: event.message, isUser: true));
-    emit(AiLoadingState(messages: messages));
+    final userMessage = ChatMessage(message: message, isUser: true);
+    final updatedMessages = [...currentState.messages, userMessage];
+    
+    // Update state with user message and loading
+    state = AsyncValue.data(
+      currentState.copyWith(messages: updatedMessages, isLoading: true),
+    );
 
     try {
       // Add empty AI message that will be updated with streaming content
-      messages.add(ChatMessage(message: "", isUser: false));
-      final aiMessageIndex = messages.length - 1;
+      final aiMessage = ChatMessage(message: "", isUser: false);
+      final messagesWithAi = [...updatedMessages, aiMessage];
+      final aiMessageIndex = messagesWithAi.length - 1;
 
-      await generateStreamingMessage(
-        message: event.message,
+      await _generateStreamingMessage(
+        message: message,
         onChunk: (chunk) {
           // Update the last message with accumulated content
-          messages[aiMessageIndex] = ChatMessage(message: chunk, isUser: false);
-          emit(AiLoadingState(messages: List.from(messages)));
+          final updatedList = List<ChatMessage>.from(messagesWithAi);
+          updatedList[aiMessageIndex] = ChatMessage(message: chunk, isUser: false);
+          
+          state = AsyncValue.data(
+            AiChatState(messages: updatedList, isLoading: true),
+          );
         },
         onSummary: (newSummary) {
           conversationSummary = newSummary;
         },
       );
 
-      await saveChat();
-      emit(AiLoadedState(messages: messages));
-    } catch (e) {
-      messages.add(
-        ChatMessage(message: "Error: ${e.toString()}", isUser: false),
+      final finalMessages = state.value?.messages ?? messagesWithAi;
+      await _saveChat(finalMessages);
+      
+      state = AsyncValue.data(AiChatState(messages: finalMessages));
+    } catch (e, stack) {
+      final errorMessage = ChatMessage(
+        message: "Error: ${e.toString()}",
+        isUser: false,
       );
-      emit(AiErrorState(error: e.toString(), messages: messages));
+      final messagesWithError = [...updatedMessages, errorMessage];
+      
+      state = AsyncValue.data(
+        AiChatState(
+          messages: messagesWithError,
+          error: e.toString(),
+        ),
+      );
     }
   }
 
-  Future<Map<String, dynamic>> generateMessage({
+  Future<Map<String, dynamic>> _generateMessage({
     required String message,
   }) async {
     final response = await model.generateContent([
@@ -169,10 +209,10 @@ class AiBloc extends Bloc<AiEvent, AiState> {
     }
   }
 
-  Future<void> generateStreamingMessage({
+  Future<void> _generateStreamingMessage({
     required String message,
-    required Function(String) onChunk,
-    required Function(String) onSummary,
+    required void Function(String) onChunk,
+    required void Function(String) onSummary,
   }) async {
     final stream = model.generateContentStream([
       Content.text(
