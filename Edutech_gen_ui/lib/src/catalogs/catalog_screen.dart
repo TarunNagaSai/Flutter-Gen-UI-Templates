@@ -58,10 +58,6 @@ class CatalogScreen extends StatelessWidget {
             QuizCardWidget(
               question: 'What is the capital of France?',
               options: ['London', 'Berlin', 'Paris', 'Madrid'],
-              selectedIndex: selectedQuizOption,
-              onOptionSelected: (index) {
-                debugPrint('Selected option: $index');
-              },
             ),
             const SizedBox(height: 8),
           ],

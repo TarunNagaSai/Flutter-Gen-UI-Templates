@@ -1,11 +1,13 @@
 import 'package:auto_route/auto_route.dart';
+import 'package:education_gen_ui/src/catalogs/catalogs.dart';
+import 'package:education_gen_ui/src/const/education_system_prompt.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:genui/genui.dart' hide ChatMessage;
-import 'package:genui_firebase_ai/genui_firebase_ai.dart';
+import 'package:genui/genui.dart';
 import 'package:education_gen_ui/src/providers/ai_provider.dart';
 import 'package:education_gen_ui/src/chat/widgets/chat_message_input.dart';
 import 'package:education_gen_ui/src/chat/widgets/chat_message_list.dart';
+import 'package:genui_firebase_ai/genui_firebase_ai.dart';
 
 @RoutePage()
 class ChatScreen extends ConsumerStatefulWidget {
@@ -18,30 +20,47 @@ class ChatScreen extends ConsumerStatefulWidget {
 class _ChatScreenState extends ConsumerState<ChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  late final GenUiConversation conversation;
 
   final List<String> surfaceIds = <String>[];
+  // AI Model
+  late final GenUiConversation _uiConversation;
 
   @override
   void initState() {
-    super.initState();
-
     final Catalog catalog = CoreCatalogItems.asCatalog();
-    final generator = FirebaseAiContentGenerator(
+    final genUiManager = GenUiManager(
+      catalog: travelAppCatalog,
+      configuration: const GenUiConfiguration(
+        actions: ActionsConfig(
+          allowCreate: true,
+          allowUpdate: true,
+          allowDelete: true,
+        ),
+      ),
+    );
+    final FirebaseAiContentGenerator generator = FirebaseAiContentGenerator(
       catalog: catalog,
-      systemInstruction:
-          ''' You are a helpful Education Tutor that communicates by creating and updating
-UI elements that appear in the chat. Your job is to help users understand concepts
-by giving detailed explanations, providing YouTube search suggestions, summarizing videos,
-and assessing knowledge through quizzes. You will always maintain the tutor role
-and won't pretend to be other personas.''',
+      systemInstruction: educationSystemPrompt,
     );
-    conversation = GenUiConversation(
-      genUiManager: GenUiManager(catalog: catalog),
+
+    _uiConversation = GenUiConversation(
+      genUiManager: genUiManager,
       contentGenerator: generator,
-      onSurfaceAdded: _onSurfaceAdded,
-      onSurfaceDeleted: _onSurfaceDeleted,
+      onSurfaceUpdated: (update) {
+        _scrollToBottom();
+      },
+      onSurfaceAdded: (update) {
+        _scrollToBottom();
+      },
+      onTextResponse: (text) {
+        if (!mounted) return;
+        if (text.isNotEmpty) {
+          _scrollToBottom();
+        }
+      },
     );
+
+    super.initState();
   }
 
   @override
@@ -51,36 +70,23 @@ and won't pretend to be other personas.''',
     super.dispose();
   }
 
-  void _onSurfaceAdded(SurfaceAdded surface) {
-    setState(() {
-      surfaceIds.add(surface.surfaceId);
-    });
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      });
+    }
   }
-
-  void _onSurfaceDeleted(SurfaceRemoved surface) {
-    setState(() {
-      surfaceIds.remove(surface.surfaceId);
-    });
-  }
-
-  // void _scrollToBottom() {
-  //   if (_scrollController.hasClients) {
-  //     WidgetsBinding.instance.addPostFrameCallback((_) {
-  //       _scrollController.animateTo(
-  //         _scrollController.position.maxScrollExtent,
-  //         duration: const Duration(milliseconds: 300),
-  //         curve: Curves.easeOut,
-  //       );
-  //     });
-  //   }
-  // }
 
   Future<void> _handleSendMessage(String text) async {
     final msg = text.trim();
     if (msg.isNotEmpty) {
       _messageController.clear();
       ref.read(aiChatProvider.notifier).sendMessage(text);
-      return conversation.sendRequest(UserMessage.text(text));
     }
   }
 
@@ -109,7 +115,7 @@ and won't pretend to be other personas.''',
                 children: [
                   Expanded(
                     child: ChatMessageList(
-                      messages: chatState.messages,
+                      messages: <ChatMessage>[],
                       isLoading: chatState.isLoading,
                       scrollController: _scrollController,
                     ),

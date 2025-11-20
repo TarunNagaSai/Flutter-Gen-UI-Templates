@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gpt_markdown/gpt_markdown.dart';
 
 class UserMessageBubble extends StatelessWidget {
   const UserMessageBubble({super.key, required this.userMessage});
@@ -12,9 +13,11 @@ class UserMessageBubble extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
       child: Row(
+        mainAxisSize: .min,
         mainAxisAlignment: .end,
+        crossAxisAlignment: .start,
         children: [
-          Text(userMessage),
+          Expanded(child: GptMarkdown(userMessage)),
           SizedBox(width: 8),
           Container(
             width: 40,

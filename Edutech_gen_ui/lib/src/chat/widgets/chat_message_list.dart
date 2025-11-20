@@ -1,6 +1,6 @@
 import 'package:education_gen_ui/src/chat/widgets/user_chat_bubble.dart';
 import 'package:flutter/material.dart';
-import 'package:education_gen_ui/src/models/chat_message.dart';
+import 'package:genui/genui.dart';
 
 class ChatMessageList extends StatelessWidget {
   final List<ChatMessage> messages;
@@ -21,7 +21,7 @@ class ChatMessageList extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       itemCount: messages.length,
       itemBuilder: (context, index) {
-        return UserMessageBubble(userMessage: messages[index].message);
+        return UserMessageBubble(userMessage: messages[index].toString());
       },
     );
   }
