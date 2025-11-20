@@ -1,10 +1,14 @@
 import 'dart:convert';
 import 'package:bloc/bloc.dart';
-import 'package:education_gen_ui/src/ai/bloc/ai_bloc.dart';
 import 'package:firebase_ai/firebase_ai.dart';
+import 'package:flutter/material.dart';
+import 'package:meta/meta.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:education_gen_ui/src/models/chat_message.dart';
 import 'package:education_gen_ui/src/const/constents.dart';
+
+part 'ai_event.dart';
+part 'ai_state.dart';
 
 class AiBloc extends Bloc<AiEvent, AiState> {
   AiBloc() : super(AiInitial()) {

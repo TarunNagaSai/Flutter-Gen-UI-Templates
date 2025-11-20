@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:education_gen_ui/src/chat/bloc/ai_bloc.dart';
+import 'package:education_gen_ui/src/ai/bloc/ai_bloc.dart';
 import 'package:education_gen_ui/src/chat/widgets/chat_suggestion_chip.dart';
 
 class ChatSuggestionChips extends StatelessWidget {
