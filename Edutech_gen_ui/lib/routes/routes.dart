@@ -8,6 +8,7 @@ class AppRouter extends RootStackRouter {
 
   @override
   List<AutoRoute> get routes => [
-    AutoRoute(page: ChatRoute.page, initial: true),
+    AutoRoute(page: ChatRoute.page),
+    AutoRoute(page: CatalogRoute.page, initial: true),
   ];
 }
