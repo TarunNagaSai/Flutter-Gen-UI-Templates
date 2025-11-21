@@ -26,13 +26,10 @@ class YouTubeService {
   /// [pageToken] - Token for pagination
   /// [type] - Type of resource to search for (default: 'video')
   /// [part] - The part parameter specifies a comma-separated list of one or more search resource properties
-  Future<YouTubeSearchResponse> searchVideos({
-    required String query,
-    int maxResults = 5,
-    String? pageToken,
-    String type = 'video',
-    String part = 'snippet',
-  }) async {
+  Future<YouTubeSearchResponse> searchVideos(String query) async {
+    final int maxResults = 5;
+    final String type = 'video';
+    final String part = 'snippet';
     try {
       final response = await _dio.get(
         '/search',
@@ -42,12 +39,13 @@ class YouTubeService {
           'type': type,
           'key': _apiKey,
           'maxResults': maxResults,
-          if (pageToken != null) 'pageToken': pageToken,
         },
       );
 
       if (response.statusCode == 200) {
-        return YouTubeSearchResponse.fromJson(response.data as Map<String, dynamic>);
+        return YouTubeSearchResponse.fromJson(
+          response.data as Map<String, dynamic>,
+        );
       } else {
         throw DioException(
           requestOptions: response.requestOptions,

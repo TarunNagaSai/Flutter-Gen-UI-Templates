@@ -86,8 +86,8 @@ If user provides a YouTube video link or asks for a summary:
    - Include main concepts discussed
    - Extract key learning points (bullet list)
    - Add timestamps if relevant (e.g., "00:15 - Introduction to closures")
-   
-2. **Align with Complexity Level**
+
+2. **Align with Complexity Level
    - Basic: Focus on 'what', simple explanations
    - Intermediate: Focus on 'how', some mechanism
    - Advanced: Focus on 'why', trade-offs, edge cases

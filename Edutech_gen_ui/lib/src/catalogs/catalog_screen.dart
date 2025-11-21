@@ -1,7 +1,6 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:education_gen_ui/src/catalogs/input_text_box_widget.dart';
-import 'package:education_gen_ui/src/catalogs/youtube_video_card_widget.dart';
 import 'package:education_gen_ui/src/catalogs/quiz_card_widget.dart';
 
 @RoutePage()
@@ -34,21 +33,12 @@ class CatalogScreen extends StatelessWidget {
               },
             ),
             const SizedBox(height: 24),
-
             // YouTube Video Card Widget
             const Text(
               'YouTube Video Card Widget',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            YouTubeVideoCardWidget(
-              videoId: 'nTOVIGsqCuY',
-              onAnalyze: () {
-                debugPrint('Analyze button pressed');
-              },
-            ),
-            const SizedBox(height: 24),
-
             // Quiz Card Widget
             const Text(
               'Quiz Card Widget',
